@@ -1,0 +1,79 @@
+services:
+  mysql:
+    container_name: mysql_c
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: "72942250"
+    ports:
+      - "8004:3306"
+    command: --local-infile=1 --lower_case_table_names=1
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - DataBase
+
+  postgres:
+    container_name: postgres_c
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: "72942250"
+    ports:
+      - "8005:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - DataBase
+
+  mongodb:
+    container_name: mongo_c
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "admin"
+      MONGO_INITDB_ROOT_PASSWORD: "72942250"
+    ports:
+      - "8006:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - DataBase
+
+  adminer:
+    container_name: adminer_c
+    image: adminer
+    depends_on:
+      - mysql
+      - postgres
+    ports:
+      - "8080:8080"
+    networks:
+      - DataBase
+
+  mongo-express:
+    container_name: mongo_express_c
+    image: mongo-express
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: "admin"
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "72942250"
+      ME_CONFIG_MONGODB_URL: "mongodb://admin:72942250@mongodb:27017"
+    ports:
+      - "8081:8081"
+    networks:
+      - DataBase
+
+volumes:
+  mysql_data:
+  postgres_data:
+  mongo_data:
+
+networks:
+  DataBase:
+    external: true
+    name: DataBase

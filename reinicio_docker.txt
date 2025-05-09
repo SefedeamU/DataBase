@@ -1,0 +1,54 @@
+🚀 Guía de Limpieza Completa de Docker (Snap → DEB) en Ubuntu/Cloud9 EC2
+
+Paso a paso seguido para eliminar conflictos causados por Docker instalado vía Snap y reinstalarlo de forma limpia:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧼 1. Eliminar Docker instalado desde Snap
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+sudo snap remove docker
+snap list | grep docker  # Verifica que esté desinstalado
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧹 2. Eliminar perfiles AppArmor asociados a Snap
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+sudo aa-remove-unknown
+sudo systemctl restart apparmor
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 3. Instalar Docker desde repositorios oficiales (paquete .deb)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+sudo apt update
+sudo apt install ca-certificates curl gnupg lsb-release -y
+
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+    sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 4. Agregar el usuario actual al grupo docker
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+sudo usermod -aG docker $USER
+newgrp docker
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔁 5. Reiniciar la instancia (opcional pero recomendable)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+sudo reboot
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Confirmar instalación limpia
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+which docker
+docker --version
+docker compose version
+sudo aa-status  # No debe mostrar snap.docker.* ni docker-default
+
